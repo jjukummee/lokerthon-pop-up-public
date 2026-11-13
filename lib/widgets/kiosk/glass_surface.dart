@@ -1,0 +1,129 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+
+import '../../theme/app_colors.dart';
+
+/// 행궁다과 색을 머금는 절제된 유리 표면.
+/// 실제 blur는 주요 조작과 시트에만 사용하고 반복 카드에서는 끈다.
+class GlassSurface extends StatelessWidget {
+  const GlassSurface({
+    super.key,
+    required this.child,
+    this.radius = Radii.card,
+    this.accented = false,
+    this.strong = false,
+    this.accentColor = AppColors.accent,
+    this.blurBackdrop = false,
+  });
+
+  final Widget child;
+  final double radius;
+
+  /// 선택된 상태. accent 톤으로 바탕이 옮겨가고 테두리가 또렷해진다.
+  final bool accented;
+
+  /// 시트처럼 내용을 확실히 가려야 하는 표면.
+  final bool strong;
+
+  final Color accentColor;
+
+  /// 뒤 화면을 실제로 흐리게 할지. 비싸므로 꼭 필요한 곳에서만 켠다.
+  final bool blurBackdrop;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = BorderRadius.circular(radius);
+
+    final gradient = accented
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(
+                accentColor,
+                AppColors.blossom,
+                0.12,
+              )!.withValues(alpha: strong ? 0.98 : 0.91),
+              AppColors.accentDeep.withValues(alpha: strong ? 0.98 : 0.92),
+            ],
+          )
+        : LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              strong ? AppColors.glassStrong : AppColors.glass,
+              AppColors.celadonSoft.withValues(alpha: strong ? 0.44 : 0.26),
+            ],
+          );
+
+    final surface = Container(
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: border,
+        border: Border.all(
+          color: accented
+              ? AppColors.blossomSoft.withValues(alpha: 0.72)
+              : Colors.white.withValues(alpha: 0.88),
+          width: accented ? 1.2 : 1,
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.passthrough,
+        children: [
+          // 위쪽 모서리의 가는 하이라이트 — 유리 두께를 만든다.
+          Positioned(
+            left: radius * 0.6,
+            right: radius * 0.6,
+            top: 0,
+            child: Container(
+              height: 1.2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0),
+                    Colors.white.withValues(alpha: accented ? 0.58 : 0.96),
+                    Colors.white.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: border,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentDeep.withValues(
+              alpha: accented ? 0.20 : (strong ? 0.13 : 0.075),
+            ),
+            blurRadius: strong ? 38 : 26,
+            offset: const Offset(0, 14),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: accented ? 0.08 : 0.5),
+            blurRadius: 1,
+            offset: const Offset(0, -1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: border,
+        child: blurBackdrop
+            ? BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: strong ? 24 : 14,
+                  sigmaY: strong ? 24 : 14,
+                ),
+                child: surface,
+              )
+            : surface,
+      ),
+    );
+  }
+}
